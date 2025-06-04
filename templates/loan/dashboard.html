@@ -24,58 +24,43 @@
                         </div>
                     </div>
 
-                    <div class="row g-3 mb-4">
-                        <!-- Processing Fee Card -->
-                        <div class="col-md-6">
-                            <div class="card border-warning border-2 h-100 rounded-4">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
+                    <!-- Withdrawal Section -->
+                    <div class="card mb-4 border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-light py-3 border-0">
+                            <h5 class="mb-0">Withdraw Savings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{% url 'dashboard' %}" id="withdrawal-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="withdraw" value="true">
+                                <div class="mb-3">
+                                    <label for="id_phone_number" class="form-label">MPESA Phone Number</label>
+                                    <input type="text" class="form-control" id="id_phone_number" 
+                                           name="phone_number" value="{{ customer.phone_number|default:'' }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_amount" class="form-label">Amount to Withdraw</label>
+                                    <input type="number" class="form-control" id="id_amount" 
+                                           name="amount" min="0.01" step="0.01" required>
+                                </div>
+                                <!-- Insufficient Funds Alert (Hidden by Default) -->
+                                <div id="insufficient-alert" class="alert alert-danger d-none">
+                                    <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <h6 class="text-warning mb-1">Processing Fee</h6>
-                                            <h4 class="fw-bold">Ksh {{ processing_fee|floatformat:2 }}</h4>
+                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                            <span>You don't have enough savings to withdraw <strong>Ksh <span id="withdraw-amount-display">0.00</span></strong>.</span>
                                         </div>
-                                        <i class="fas fa-file-invoice-dollar fs-2 text-warning opacity-50"></i>
+                                        <a href="{% url 'savings_page' %}" class="btn btn-sm btn-success ms-3">
+                                            <i class="fas fa-plus-circle me-1"></i> Top Up
+                                        </a>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Payment Status Card -->
-                        <div class="col-md-6">
-                            <div class="card border-success border-2 h-100 rounded-4">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="text-success mb-1">Payment Status</h6>
-                                            <h4 class="fw-bold">
-                                                {% if customer.processing_fee_paid %}
-                                                    <span class="text-success">Paid</span>
-                                                {% else %}
-                                                    <span class="text-danger">Pending</span>
-                                                {% endif %}
-                                            </h4>
-                                        </div>
-                                        <i class="fas fa-check-circle fs-2 text-success opacity-50"></i>
-                                    </div>
-                                </div>
-                            </div>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="fas fa-money-bill-wave me-2"></i> Request Withdrawal
+                                </button>
+                            </form>
                         </div>
                     </div>
-
-                    <!-- Payment Button -->
-                    {% if not customer.processing_fee_paid %}
-                    <div class="alert alert-success bg-success bg-opacity-10 border-success border-start-0 border-end-0 border-5 mb-4">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-success mb-1">Complete Your Application</h6>
-                                <p class="mb-0">Pay your processing fee to activate your loan account</p>
-                            </div>
-                            <a href="{{ payment_link }}" target="_blank" class="btn btn-success rounded-pill px-4">
-                                <i class="fas fa-credit-card me-2"></i> Pay Now
-                            </a>
-                        </div>
-                    </div>
-                    {% endif %}
 
                     <!-- Quick Actions -->
                     <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-4">
@@ -84,9 +69,6 @@
                         </a>
                         <a href="{% url 'loan_status' %}" class="btn btn-outline-primary rounded-pill px-4 py-2">
                             <i class="fas fa-search-dollar me-2"></i> Check Status
-                        </a>
-                        <a href="{% url 'repayment' %}" class="btn btn-outline-primary rounded-pill px-4 py-2">
-                            <i class="fas fa-credit-card me-2"></i> Make Payment
                         </a>
                     </div>
                 </div>
@@ -144,6 +126,53 @@
                 </div>
             </div>
 
+            <!-- Withdrawal History Section -->
+            <div class="card border-0 shadow-sm rounded-4 mt-4 overflow-hidden">
+                <div class="card-header bg-light py-3 border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Withdrawal History</h5>
+                        <span class="badge bg-info">{{ customer.withdrawalrequest_set.count }} Requests</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Amount</th>
+                                    <th>Phone Number</th>
+                                    <th>Status</th>
+                                    <th class="pe-4">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for withdrawal in customer.withdrawalrequest_set.all %}
+                                <tr>
+                                    <td class="ps-4 fw-bold">Ksh {{ withdrawal.amount|floatformat:2 }}</td>
+                                    <td>{{ withdrawal.phone_number }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if withdrawal.status == 'Approved' %}bg-success
+                                            {% elif withdrawal.status == 'Pending' %}bg-warning text-dark
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ withdrawal.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ withdrawal.created_at|date:"d M Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-info-circle me-2"></i> No withdrawal history found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Account Management -->
             <div class="card border-0 shadow-sm rounded-4 mt-4">
                 <div class="card-header bg-light py-3 border-0">
@@ -185,8 +214,73 @@
     </div>
 </div>
 
+<!-- Messages Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalLabel">Notification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} mb-0">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        {% if messages %}
+            $('#messageModal').modal('show');
+        {% endif %}
+        
+        // Format amount input
+        $('#id_amount').on('input', function() {
+            let value = $(this).val();
+            if (value && value.indexOf('.') === -1) {
+                $(this).val(value + '.00');
+            }
+        });
+        
+        // Withdrawal form validation
+        $('#withdrawal-form').on('submit', function(e) {
+            const savingsBalance = {{ customer.savings_balance|default:0 }};
+            const withdrawAmount = parseFloat($('#id_amount').val());
+            
+            if (withdrawAmount > savingsBalance) {
+                e.preventDefault(); // Prevent form submission
+                
+                // Show amount in alert
+                $('#withdraw-amount-display').text(withdrawAmount.toFixed(2));
+                
+                // Show insufficient funds alert
+                $('#insufficient-alert').removeClass('d-none');
+                
+                // Scroll to alert for visibility
+                $('html, body').animate({
+                    scrollTop: $('#insufficient-alert').offset().top - 100
+                }, 300);
+            }
+        });
+        
+        // Hide alert when amount changes
+        $('#id_amount').on('input', function() {
+            $('#insufficient-alert').addClass('d-none');
+        });
+    });
+</script>
+
 <style>
-    /* Custom Card Styles */
     .card {
         transition: all 0.3s ease;
     }
@@ -195,7 +289,6 @@
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
     
-    /* Table Hover Effect */
     .table-hover tbody tr {
         transition: all 0.2s ease;
     }
@@ -205,18 +298,20 @@
         transform: translateX(2px);
     }
     
-    /* List Group Items */
     .list-group-item-action:hover {
         background-color: rgba(67, 97, 238, 0.05);
     }
     
-    /* Status Badges */
     .badge {
         padding: 0.35em 0.65em;
         font-weight: 500;
     }
     
-    /* Responsive Adjustments */
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
     @media (max-width: 768px) {
         .d-sm-flex {
             flex-direction: column;

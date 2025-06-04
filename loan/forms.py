@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
-from .models import Customer
+from .models import Customer, SavingsOption
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
@@ -157,3 +157,46 @@ class CustomPasswordChangeForm(PasswordChangeForm):
     new_password2 = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
+
+class SavingsPaymentForm(forms.Form):
+    savings_option = forms.ModelChoiceField(
+        queryset=SavingsOption.objects.all(),
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        empty_label=None
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['savings_option'].queryset = SavingsOption.objects.all()
+        self.fields['savings_option'].label_from_instance = lambda obj: f"Ksh {obj.amount} (Get Ksh {obj.savings})"
+
+class WithdrawalForm(forms.Form):
+    amount = forms.DecimalField(
+        label='Amount to Withdraw',
+        min_value=0.01,
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter amount'
+        })
+    )
+    
+    phone_number = forms.CharField(
+        label='MPESA Phone Number',
+        max_length=15,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 254700000000'
+        }),
+        validators=[RegexValidator(
+            regex=r'^\+?1?\d{9,15}$',
+            message="Phone number must be entered in the format: '+254700000000'. Up to 15 digits allowed."
+        )]
+    )
+    
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount')
+        if amount and amount <= 0:
+            raise ValidationError("Amount must be greater than zero.")
+        return amount

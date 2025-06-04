@@ -1,0 +1,212 @@
+{% extends 'loan/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <div class="mb-3">
+            <i class="bi bi-piggy-bank-fill text-danger" style="font-size: 2.5rem;"></i>
+        </div>
+        <h3 class="mb-2 text-dark fw-bold">Savings Top-Up Required</h3>
+        <p class="text-muted fs-5">To qualify for this loan, please select a savings top-up option below</p>
+    </div>
+
+    <div class="row justify-content-center g-4">
+        {% for option in savings_options %}
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex flex-column p-4">
+                    <div class="mb-3">
+                        <span class="badge bg-success bg-opacity-10 text-success mb-2">Loan Option</span>
+                        <h5 class="card-title text-dark fw-semibold">Ksh {{ option.amount|floatformat:2 }}</h5>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-muted mb-1">Required Savings:</p>
+                        <h4 class="text-success fw-bold">Ksh {{ option.savings|floatformat:2 }}</h4>
+                    </div>
+                    <button class="btn btn-primary mt-auto align-self-stretch" data-bs-toggle="modal" data-bs-target="#modal{{ option.id }}">
+                        <i class="bi bi-arrow-up-circle me-2"></i>Top Up Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="modal{{ option.id }}" tabindex="-1" aria-labelledby="modalLabel{{ option.id }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0">
+                    <div class="modal-header border-0 pb-0">
+                        <div>
+                            <h5 class="modal-title fw-bold" id="modalLabel{{ option.id }}">Complete Your Top-Up</h5>
+                            <p class="text-muted small">Follow these steps to qualify for your loan</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pt-1">
+                        <div class="alert alert-info border-0 bg-light">
+                            <div class="d-flex">
+                                <i class="bi bi-info-circle-fill text-info me-2"></i>
+                                <div>
+                                    <strong>Top Up:</strong> Ksh {{ option.amount|floatformat:2 }}<br>
+                                    <strong>Receive:</strong> Ksh {{ option.savings|floatformat:2 }} in savings
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-light rounded p-3 mb-4">
+                            <h6 class="fw-bold mb-3">M-Pesa Payment Instructions</h6>
+                            <ol class="list-group list-group-numbered list-group-flush">
+                                <li class="list-group-item bg-transparent ps-0 pe-0 py-1 border-0">Open your M-Pesa menu</li>
+                                <li class="list-group-item bg-transparent ps-0 pe-0 py-1 border-0">Select <span class="badge bg-primary bg-opacity-10 text-primary">Lipa na M-Pesa</span></li>
+                                <li class="list-group-item bg-transparent ps-0 pe-0 py-1 border-0">Choose <span class="badge bg-primary bg-opacity-10 text-primary">Buy Goods and Services</span></li>
+                                <li class="list-group-item bg-transparent ps-0 pe-0 py-1 border-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span>Enter Till Number:</span>
+                                        <div class="input-group ms-2" style="width: 150px;">
+                                            <input type="text" id="tillInput{{ option.id }}" class="form-control form-control-sm" value="123456" readonly>
+                                            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="copyTill({{ option.id }})">
+                                                <i class="bi bi-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item bg-transparent ps-0 pe-0 py-1 border-0">Enter Amount: <span class="badge bg-success bg-opacity-10 text-success">Ksh {{ option.amount|floatformat:2 }}</span></li>
+                                <li class="list-group-item bg-transparent ps-0 pe-0 py-1 border-0">Enter your M-Pesa PIN and confirm</li>
+                            </ol>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transactionCode{{ option.id }}" class="form-label fw-semibold">Transaction Code</label>
+                            <input type="text" class="form-control" id="transactionCode{{ option.id }}" placeholder="Enter M-Pesa transaction code">
+                            <small class="text-muted">Found in your M-Pesa confirmation message</small>
+                        </div>
+
+                        <!-- Animated Confirm Button -->
+                        <div class="text-center mt-4">
+                            <button id="confirmBtn{{ option.id }}" class="btn btn-success px-5 py-2" onclick="simulateConfirmation({{ option.id }})">
+                                <span id="btnText{{ option.id }}">Confirm Payment</span>
+                                <span id="btnSpinner{{ option.id }}" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <p class="small text-muted">
+                                <i class="bi bi-shield-lock me-1"></i> Payments are processed securely
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- JS: Copy Till and Confirmation Animation -->
+<script>
+    function copyTill(id) {
+        const input = document.getElementById(`tillInput${id}`);
+        input.select();
+        input.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        
+        // Show tooltip instead of alert
+        const copyBtn = input.nextElementSibling;
+        const originalTitle = copyBtn.getAttribute('data-original-title');
+        copyBtn.setAttribute('data-original-title', 'Copied!');
+        $(copyBtn).tooltip('show');
+        setTimeout(() => {
+            copyBtn.setAttribute('data-original-title', originalTitle || 'Copy');
+            $(copyBtn).tooltip('hide');
+        }, 1000);
+    }
+
+    function simulateConfirmation(id) {
+        const btn = document.getElementById(`confirmBtn${id}`);
+        const btnText = document.getElementById(`btnText${id}`);
+        const spinner = document.getElementById(`btnSpinner${id}`);
+        
+        // Disable button and show spinner
+        btn.disabled = true;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+        btnText.innerText = 'Processing...';
+        spinner.classList.remove('d-none');
+        
+        // Simulate processing steps
+        setTimeout(() => {
+            btnText.innerText = 'Verifying...';
+        }, 1500);
+        
+        setTimeout(() => {
+            btnText.innerText = 'Confirming with M-Pesa...';
+        }, 3000);
+        
+        // Final state
+        setTimeout(() => {
+            spinner.classList.add('d-none');
+            btnText.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Payment Confirmed';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            
+            // You can add redirect or other actions here
+        }, 4500);
+    }
+
+    // Initialize tooltips
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-radius: 12px;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    #confirmBtn {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #confirmBtn:after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+    
+    #confirmBtn:focus:not(:active)::after {
+        animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+        0% {
+            transform: scale(0, 0);
+            opacity: 0.5;
+        }
+        100% {
+            transform: scale(20, 20);
+            opacity: 0;
+        }
+    }
+</style>
+{% endblock %}

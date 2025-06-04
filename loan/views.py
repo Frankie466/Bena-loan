@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, update_session_auth_hash
 from django.contrib import messages
-from .forms import RegisterForm, LoginForm, ProfileUpdateForm
-from .models import Customer
+from .forms import RegisterForm, LoginForm, ProfileUpdateForm, WithdrawalForm
+from .models import Customer, SavingsOption, WithdrawalRequest
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_backends
@@ -42,14 +42,41 @@ def register(request):
 def dashboard(request):
     customer = get_object_or_404(Customer, user=request.user)
     
+    # Initialize loan limit if not set
     if customer.loan_limit == 0:
         customer.assign_loan_limit()
     
-    processing_fee = customer.calculate_processing_fee()
+    # Get all savings options
+    savings_options = SavingsOption.objects.all()
+    
+    # Handle withdrawal request
+    if request.method == 'POST' and 'withdraw' in request.POST:
+        form = WithdrawalForm(request.POST)
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+            phone_number = form.cleaned_data['phone_number']
+            
+            if amount > customer.savings_balance:
+                messages.error(request, 'You have insufficient savings balance. Please top up to complete your withdrawal.')
+                return redirect('savings_page')   
+            else:
+                # Create withdrawal request
+                WithdrawalRequest.objects.create(
+                    customer=customer,
+                    amount=amount,
+                    phone_number=phone_number
+                )
+                messages.success(request, 'Withdrawal request submitted successfully!')
+                return redirect('dashboard')
+    else:
+        form = WithdrawalForm(initial={
+            'phone_number': customer.phone_number
+        })
     
     return render(request, 'loan/dashboard.html', {
         'customer': customer,
-        'processing_fee': processing_fee,
+        'savings_options': savings_options,
+        'withdrawal_form': form,
         'payment_link': 'https://checkoutjpv2.jambopay.com/lipa/paybill/16525439'
     })
 
@@ -105,3 +132,25 @@ def loan_status(request):
 @login_required
 def repayment(request):
     return render(request, 'loan/repayment.html')
+@login_required
+def process_savings(request):
+    if request.method == 'POST':
+        option_id = request.POST.get('savings_option')
+        try:
+            option = SavingsOption.objects.get(id=option_id)
+            # Process payment here (using your existing payment system)
+            # After successful payment:
+            customer = request.user.customer
+            customer.savings_balance += option.savings
+            customer.save()
+            messages.success(request, f'Successfully added Ksh {option.savings} to your savings!')
+        except SavingsOption.DoesNotExist:
+            messages.error(request, 'Invalid savings option selected')
+    return redirect('dashboard')
+
+@login_required
+def savings_page(request):
+    savings_options = SavingsOption.objects.all()
+    return render(request, 'loan/savings.html', {
+        'savings_options': savings_options
+    })

@@ -20,18 +20,35 @@ class Customer(models.Model):
         ]
     )
     loan_limit = models.IntegerField(default=0)
+    savings_balance = models.DecimalField(default=0.00, max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def assign_loan_limit(self):
-        loan_limits = [2500, 2700, 2900, 3000, 3200, 3400, 3500, 3700, 3900,
-        4000, 4200, 4400, 4500, 4700, 4900,
-        5000, 5200, 5400, 5500, 5700, 5900,
-        6000, 6200, 6400, 6500, 6700, 6900,
-        7000, 7200, 7400, 7500, 7700, 7900,
-        8000, 8200, 8400, 8500, 8700, 8900,
-        9000, 9200, 9400, 9500, 9700, 9900, 10000]
+        loan_limits = [
+            2500, 2700, 2900, 3000, 3200, 3400, 3500,
+        ]
         self.loan_limit = random.choice(loan_limits)
         self.save()
 
     def calculate_processing_fee(self):
         return 0.07 * self.loan_limit
+
+    def __str__(self):
+        return self.full_name
+
+class SavingsOption(models.Model):
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    savings = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Ksh {self.amount} - Savings: Ksh {self.savings}"
+
+class WithdrawalRequest(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    phone_number = models.CharField(max_length=15)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    processed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.customer.full_name} - Ksh {self.amount} on {self.requested_at.strftime('%Y-%m-%d')}"
