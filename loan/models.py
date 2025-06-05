@@ -25,7 +25,7 @@ class Customer(models.Model):
 
     def assign_loan_limit(self):
         loan_limits = [
-            2500, 2700, 2900, 3000, 3200, 3400, 3500,
+            4500, 7200, 14000, 28000,
         ]
         self.loan_limit = random.choice(loan_limits)
         self.save()
