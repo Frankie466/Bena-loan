@@ -9,8 +9,7 @@ class Customer(models.Model):
     id_number = models.CharField(max_length=10, unique=True)
     phone_number = models.CharField(max_length=15, unique=True)
     address = models.TextField()
-    next_of_kin_name = models.CharField(max_length=100)
-    next_of_kin_phone = models.CharField(max_length=15)
+
     employment_status = models.CharField(
         max_length=20,
         choices=[
@@ -25,7 +24,7 @@ class Customer(models.Model):
 
     def assign_loan_limit(self):
         loan_limits = [
-            2500, 2700, 2900, 3000, 3200, 3400, 3500,
+            4500, 7200, 14000, 28000,
         ]
         self.loan_limit = random.choice(loan_limits)
         self.save()

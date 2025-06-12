@@ -71,8 +71,7 @@ class RegisterForm(forms.ModelForm):
             'dob', 
             'id_number', 
             'phone_number', 
-            'next_of_kin_name', 
-            'next_of_kin_phone', 
+
             'employment_status'
         ]
         widgets = {
@@ -83,14 +82,7 @@ class RegisterForm(forms.ModelForm):
             'id_number': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'ID Number'
-            }),
-            'next_of_kin_name': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Next of Kin Name'
-            }),
-            'next_of_kin_phone': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Next of Kin Phone'
+
             }),
             'employment_status': forms.Select(attrs={
                 'class': 'form-control'
@@ -133,8 +125,7 @@ class ProfileUpdateForm(forms.ModelForm):
             'phone_number',
             'id_number',
             'dob',
-            'next_of_kin_name',
-            'next_of_kin_phone',
+
             'employment_status'
         ]
         widgets = {
@@ -142,8 +133,7 @@ class ProfileUpdateForm(forms.ModelForm):
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
             'id_number': forms.TextInput(attrs={'class': 'form-control'}),
             'dob': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'next_of_kin_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'next_of_kin_phone': forms.TextInput(attrs={'class': 'form-control'}),
+
             'employment_status': forms.Select(attrs={'class': 'form-control'}),
         }
 
